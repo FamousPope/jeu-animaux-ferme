@@ -1,0 +1,1305 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Qui se cache dans la grange mystère ? - Les animaux de la ferme</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Fredoka', sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+            overflow-x: hidden;
+            touch-action: manipulation;
+        }
+
+        /* Animations personnalisées pour les enfants */
+        @keyframes wobbleBox {
+            0%, 100% { transform: rotate(0deg) scale(1); }
+            15% { transform: rotate(-6deg) scale(1.06); }
+            30% { transform: rotate(6deg) scale(1.08); }
+            45% { transform: rotate(-5deg) scale(1.06); }
+            60% { transform: rotate(5deg) scale(1.04); }
+            75% { transform: rotate(-3deg) scale(1.02); }
+        }
+
+        @keyframes floatIdle {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-6px); }
+        }
+
+        @keyframes shakeWrong {
+            0%, 100% { transform: translateX(0); }
+            20% { transform: translateX(-12px) rotate(-3deg); }
+            40% { transform: translateX(12px) rotate(3deg); }
+            60% { transform: translateX(-10px) rotate(-2deg); }
+            80% { transform: translateX(10px) rotate(2deg); }
+        }
+
+        @keyframes popReveal {
+            0% { transform: scale(0.3) translateY(30px); opacity: 0; }
+            70% { transform: scale(1.12) translateY(-8px); opacity: 1; }
+            100% { transform: scale(1) translateY(0); opacity: 1; }
+        }
+
+        @keyframes pulseWave {
+            0% { transform: scale(0.85); opacity: 0.9; }
+            100% { transform: scale(1.55); opacity: 0; }
+        }
+
+        @keyframes floatNote {
+            0% { transform: translateY(10px) scale(0.6) rotate(-10deg); opacity: 0; }
+            25% { opacity: 1; }
+            100% { transform: translateY(-65px) scale(1.25) rotate(14deg); opacity: 0; }
+        }
+
+        .box-playing {
+            animation: wobbleBox 0.8s ease-in-out infinite;
+        }
+
+        .box-idle {
+            animation: floatIdle 3s ease-in-out infinite;
+        }
+
+        .card-wrong-shake {
+            animation: shakeWrong 0.5s ease-in-out;
+        }
+
+        .animal-reveal-anim {
+            animation: popReveal 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+
+        .sound-wave-ring {
+            animation: pulseWave 1.2s cubic-bezier(0.24, 0, 0.38, 1) infinite;
+        }
+
+        .music-note {
+            animation: floatNote 1.5s ease-out infinite;
+        }
+
+        /* Portes battantes de la grange mystère */
+        .barn-door-left, .barn-door-right {
+            transition: transform 0.65s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .barn-door-left {
+            transform-origin: 54px 128px;
+        }
+        .barn-door-right {
+            transform-origin: 186px 128px;
+        }
+        .barn-open .barn-door-left {
+            transform: scaleX(0.18) skewY(12deg);
+        }
+        .barn-open .barn-door-right {
+            transform: scaleX(0.18) skewY(-12deg);
+        }
+
+        .animal-card {
+            transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease, border-color 0.2s ease;
+            box-shadow: 0 10px 0 #cbd5e1, 0 14px 20px rgba(0,0,0,0.12);
+        }
+
+        .animal-card:active:not(:disabled) {
+            transform: translateY(6px);
+            box-shadow: 0 4px 0 #cbd5e1, 0 6px 10px rgba(0,0,0,0.12);
+        }
+
+        .animal-card-correct {
+            border-color: #22c55e !important;
+            background: linear-gradient(180deg, #f0fdf4 0%, #dcfce7 100%) !important;
+            box-shadow: 0 10px 0 #16a34a, 0 0 30px rgba(34, 197, 94, 0.6) !important;
+            transform: scale(1.04);
+        }
+
+        .animal-card-wrong {
+            border-color: #ef4444 !important;
+            background: #fef2f2 !important;
+            box-shadow: 0 6px 0 #dc2626 !important;
+        }
+
+        .btn-3d {
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+        .btn-3d:active {
+            transform: translateY(4px);
+        }
+
+        /* Nuages décoratifs en arrière-plan */
+        .cloud {
+            background: rgba(255, 255, 255, 0.85);
+            border-radius: 9999px;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between bg-gradient-to-b from-sky-300 via-sky-200 to-emerald-200 relative overflow-x-hidden">
+
+    <!-- Canvas Confettis au premier plan -->
+    <canvas id="confetti-canvas" class="fixed inset-0 pointer-events-none z-50"></canvas>
+
+    <!-- Décor de fond : Soleil, Nuages et Collines de la ferme -->
+    <div class="fixed inset-0 pointer-events-none overflow-hidden z-0 bg-gradient-to-b from-sky-300 via-sky-200 to-emerald-200">
+        <!-- Soleil souriant -->
+        <div class="absolute top-4 right-4 sm:top-6 sm:right-8 w-16 h-16 sm:w-24 sm:h-24 bg-yellow-300 rounded-full shadow-[0_0_40px_rgba(253,224,71,0.9)] border-4 border-yellow-200 flex items-center justify-center">
+            <div class="w-10 h-10 sm:w-14 sm:h-14 rounded-full bg-yellow-400 opacity-50"></div>
+        </div>
+        <!-- Nuages -->
+        <div class="cloud w-32 h-10 sm:w-44 sm:h-12 absolute top-8 left-6 opacity-80"></div>
+        <div class="cloud w-24 h-8 sm:w-36 sm:h-10 absolute top-20 left-1/3 opacity-70"></div>
+        <!-- Prairie verte en bas -->
+        <div class="absolute bottom-0 left-0 right-0 h-32 sm:h-44 bg-gradient-to-t from-green-600 via-green-500 to-lime-400 rounded-t-[45%] scale-x-110 border-t-4 border-lime-300 z-10"></div>
+    </div>
+
+    <!-- Les sons personnalisés sont des fichiers MP3 hébergés à côté de cette page. -->
+
+    <!-- ÉCRAN D'ACCUEIL -->
+    <div id="start-screen" class="relative z-10 flex-1 flex flex-col items-center justify-center p-4 sm:p-8 text-center max-w-2xl mx-auto w-full">
+        <div class="bg-white/95 backdrop-blur-sm rounded-[2.5rem] p-6 sm:p-10 shadow-2xl border-8 border-red-400 w-full">
+            <div class="inline-block bg-red-100 text-red-800 px-4 py-1.5 rounded-full text-sm sm:text-base font-bold mb-3 border-2 border-red-300">
+                🚜 Jeu d'éveil sonore • 10 Animaux
+            </div>
+            <h1 class="text-3xl sm:text-5xl font-bold text-red-900 leading-tight mb-4">
+                Qui se cache dans la grange mystère ?
+            </h1>
+            <p class="text-lg sm:text-xl text-stone-600 font-medium mb-6">
+                Écoute bien le cri de l'animal caché dans la grange et touche la bonne image !
+            </p>
+
+            <!-- Aperçu visuel grange mystère -->
+            <div class="my-4 flex justify-center">
+                <div class="w-44 h-40 sm:w-52 sm:h-48 box-idle">
+                    <svg viewBox="0 0 240 210" class="w-full h-full drop-shadow-xl">
+                        <!-- Girouette coq sur le toit -->
+                        <line x1="120" y1="6" x2="120" y2="26" stroke="#78350f" stroke-width="4" stroke-linecap="round"/>
+                        <path d="M 114 14 Q 120 4 128 11 Q 132 16 125 19 L 116 19 Z" fill="#f59e0b"/>
+                        <!-- Toit mansardé rouge -->
+                        <polygon points="120,22 44,62 22,106 218,106 196,62" fill="#b91c1c" stroke="#7f1d1d" stroke-width="5" stroke-linejoin="round"/>
+                        <polyline points="16,108 44,62 120,22 196,62 224,108" fill="none" stroke="#ffffff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+                        <!-- Façade en bois rouge -->
+                        <rect x="34" y="104" width="172" height="96" rx="6" fill="#dc2626" stroke="#7f1d1d" stroke-width="5"/>
+                        <!-- Fenêtre du grenier à foin -->
+                        <rect x="98" y="54" width="44" height="36" rx="5" fill="#78350f" stroke="#ffffff" stroke-width="4"/>
+                        <path d="M 102 86 Q 120 74 138 86 Z" fill="#facc15"/>
+                        <!-- Grandes portes de grange -->
+                        <rect x="56" y="114" width="64" height="86" fill="#991b1b" stroke="#ffffff" stroke-width="4"/>
+                        <line x1="56" y1="114" x2="120" y2="200" stroke="#ffffff" stroke-width="4"/>
+                        <line x1="120" y1="114" x2="56" y2="200" stroke="#ffffff" stroke-width="4"/>
+                        <rect x="120" y="114" width="64" height="86" fill="#991b1b" stroke="#ffffff" stroke-width="4"/>
+                        <line x1="120" y1="114" x2="184" y2="200" stroke="#ffffff" stroke-width="4"/>
+                        <line x1="184" y1="114" x2="120" y2="200" stroke="#ffffff" stroke-width="4"/>
+                        <!-- Médaillon point d'interrogation -->
+                        <circle cx="120" cy="156" r="24" fill="#fef08a" stroke="#b45309" stroke-width="4"/>
+                        <text x="120" y="167" text-anchor="middle" font-size="32" font-weight="bold" fill="#92400e">?</text>
+                    </svg>
+                </div>
+            </div>
+
+            <button id="btn-start" class="btn-3d w-full sm:w-auto px-10 py-5 bg-gradient-to-b from-green-400 to-green-600 hover:from-green-500 hover:to-green-700 text-white text-2xl sm:text-3xl font-bold rounded-3xl shadow-[0_8px_0_#15803d] border-4 border-green-300 flex items-center justify-center gap-3 mx-auto cursor-pointer">
+                <span>▶️</span>
+                <span>Commencer le jeu</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- ÉCRAN DE JEU PRINCIPAL (10 DIAPOSITIVES) -->
+    <div id="game-screen" class="hidden relative z-10 flex-1 flex flex-col justify-between max-w-4xl mx-auto w-full px-3 py-3 sm:px-6 sm:py-5">
+        
+        <!-- Barre supérieure : Progression des 10 diapositives -->
+        <header class="bg-white/90 backdrop-blur-sm rounded-3xl p-3 sm:p-4 shadow-lg border-4 border-red-300 flex flex-col sm:flex-row items-center justify-between gap-2">
+            <div class="flex items-center gap-2">
+                <span class="text-2xl">🏡</span>
+                <span id="slide-counter" class="text-lg sm:text-2xl font-bold text-red-900">Diapositive 1 / 10</span>
+            </div>
+            <!-- Étoiles de progression -->
+            <div id="stars-bar" class="flex items-center gap-1 sm:gap-1.5 flex-wrap justify-center">
+                <!-- Généré dynamiquement (10 pastilles/étoiles) -->
+            </div>
+        </header>
+
+        <!-- Zone Centrale : La Grange Mystère -->
+        <main class="flex-1 flex flex-col items-center justify-center my-2 sm:my-3">
+            
+            <div class="relative flex flex-col items-center">
+                <!-- Ondes sonores et notes de musique animées autour de la grange -->
+                <div id="sound-waves" class="hidden absolute inset-0 flex items-center justify-center pointer-events-none z-20">
+                    <div class="w-48 h-48 sm:w-56 sm:h-56 rounded-full border-8 border-yellow-300 sound-wave-ring"></div>
+                    <div class="w-48 h-48 sm:w-56 sm:h-56 rounded-full border-8 border-white sound-wave-ring" style="animation-delay: 0.4s;"></div>
+                    <span class="music-note absolute top-6 left-4 text-3xl sm:text-4xl drop-shadow">🎵</span>
+                    <span class="music-note absolute top-4 right-4 text-3xl sm:text-4xl drop-shadow" style="animation-delay: 0.35s;">🎶</span>
+                    <span class="music-note absolute top-12 right-12 text-2xl sm:text-3xl drop-shadow" style="animation-delay: 0.7s;">🎵</span>
+                </div>
+
+                <!-- La Grange Mystère Cliquable -->
+                <button id="mystery-box-btn" aria-label="Écouter le cri de la grange mystère" class="relative group cursor-pointer focus:outline-none">
+                    <div id="box-body" class="w-56 h-48 sm:w-72 sm:h-60 relative z-10 box-idle flex items-center justify-center">
+                        <!-- Illustration SVG de la Grange Mystère -->
+                        <svg id="barn-svg" viewBox="0 0 240 210" class="w-full h-full drop-shadow-[0_12px_16px_rgba(0,0,0,0.28)] overflow-visible">
+                            <!-- Girouette coq doré sur le toit -->
+                            <line x1="120" y1="4" x2="120" y2="25" stroke="#78350f" stroke-width="4" stroke-linecap="round"/>
+                            <path d="M 113 13 Q 120 3 128 10 Q 133 15 126 18 L 115 18 Z" fill="#f59e0b" stroke="#b45309" stroke-width="1.5"/>
+
+                            <!-- Toit mansardé rouge classique -->
+                            <polygon points="120,20 42,60 20,104 220,104 198,60" fill="#b91c1c" stroke="#7f1d1d" stroke-width="5" stroke-linejoin="round"/>
+                            <!-- Bordure blanche du toit -->
+                            <polyline points="14,106 42,60 120,20 198,60 226,106" fill="none" stroke="#ffffff" stroke-width="6.5" stroke-linecap="round" stroke-linejoin="round"/>
+
+                            <!-- Façade principale en bois rouge -->
+                            <rect x="32" y="102" width="176" height="98" rx="6" fill="#dc2626" stroke="#7f1d1d" stroke-width="5"/>
+                            <!-- Lattes horizontales décoratives -->
+                            <line x1="35" y1="126" x2="205" y2="126" stroke="#991b1b" stroke-width="2" opacity="0.55"/>
+                            <line x1="35" y1="150" x2="205" y2="150" stroke="#991b1b" stroke-width="2" opacity="0.55"/>
+                            <line x1="35" y1="174" x2="205" y2="174" stroke="#991b1b" stroke-width="2" opacity="0.55"/>
+
+                            <!-- Fenêtre du grenier à foin -->
+                            <rect x="97" y="52" width="46" height="36" rx="5" fill="#451a03" stroke="#ffffff" stroke-width="4"/>
+                            <path d="M 101 84 Q 120 71 139 84 Z" fill="#facc15"/>
+
+                            <!-- Intérieur sombre chaleureux de la grange (visible quand les portes s'ouvrent) -->
+                            <rect x="54" y="110" width="132" height="90" rx="4" fill="#451a03" stroke="#ffffff" stroke-width="4"/>
+                            <!-- Tas de foin doré à l'intérieur -->
+                            <ellipse cx="120" cy="194" rx="56" ry="12" fill="#facc15"/>
+
+                            <!-- Contenu révélé : L'animal apparaît au centre de la grange ouverte -->
+                            <foreignObject x="68" y="112" width="104" height="86">
+                                <div xmlns="http://www.w3.org/1999/xhtml" id="box-revealed-content" class="hidden w-full h-full items-center justify-center animal-reveal-anim">
+                                    <div id="revealed-svg-container" class="w-20 h-20"></div>
+                                </div>
+                            </foreignObject>
+
+                            <!-- Porte battante gauche -->
+                            <g class="barn-door-left">
+                                <rect x="54" y="110" width="66" height="90" fill="#991b1b" stroke="#ffffff" stroke-width="4"/>
+                                <line x1="54" y1="110" x2="120" y2="200" stroke="#ffffff" stroke-width="4"/>
+                                <line x1="120" y1="110" x2="54" y2="200" stroke="#ffffff" stroke-width="4"/>
+                            </g>
+
+                            <!-- Porte battante droite -->
+                            <g class="barn-door-right">
+                                <rect x="120" y="110" width="66" height="90" fill="#991b1b" stroke="#ffffff" stroke-width="4"/>
+                                <line x1="120" y1="110" x2="186" y2="200" stroke="#ffffff" stroke-width="4"/>
+                                <line x1="186" y1="110" x2="120" y2="200" stroke="#ffffff" stroke-width="4"/>
+                            </g>
+
+                            <!-- Emblème Mystère "?" sur les portes fermées -->
+                            <g id="box-mystery-content">
+                                <circle cx="120" cy="154" r="25" fill="#fef08a" stroke="#b45309" stroke-width="4"/>
+                                <text x="120" y="165" text-anchor="middle" font-size="34" font-weight="bold" fill="#92400e">?</text>
+                            </g>
+                        </svg>
+                    </div>
+                </button>
+
+                <!-- Bouton explicite pour réécouter le cri -->
+                <div class="mt-2 sm:mt-3">
+                    <button id="btn-replay-sound" class="btn-3d px-6 py-2.5 sm:py-3 bg-gradient-to-b from-amber-400 to-orange-500 hover:from-amber-500 hover:to-orange-600 text-white font-bold text-lg sm:text-xl rounded-2xl shadow-[0_6px_0_#c2410c] border-2 border-amber-200 flex items-center gap-2.5 cursor-pointer">
+                        <span class="text-2xl">🔊</span>
+                        <span>Écouter le cri</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Bannière de feedback / Consigne -->
+            <div id="feedback-banner" class="mt-3 sm:mt-3 min-h-[2.8rem] flex items-center justify-center text-center px-4">
+                <p id="feedback-text" class="text-xl sm:text-2xl font-bold text-amber-950 bg-white/85 px-5 py-2 rounded-2xl shadow-sm border-2 border-amber-200">
+                    De quel animal s'agit-il ?
+                </p>
+            </div>
+        </main>
+
+        <!-- Zone Inférieure : Les 3 cartes d'animaux -->
+        <section aria-label="Choix des animaux" class="w-full pb-2">
+            <div id="choices-grid" class="grid grid-cols-3 gap-3 sm:gap-6 max-w-3xl mx-auto">
+                <!-- 3 cartes générées dynamiquement -->
+            </div>
+
+            <!-- Bouton Suivant (apparaît quand la bonne réponse est trouvée) -->
+            <div id="next-container" class="hidden mt-4 flex justify-center">
+                <button id="btn-next" class="btn-3d px-8 py-4 bg-gradient-to-b from-green-400 to-green-600 hover:from-green-500 hover:to-green-700 text-white text-2xl sm:text-3xl font-bold rounded-3xl shadow-[0_7px_0_#15803d] border-4 border-green-200 flex items-center gap-3 cursor-pointer animate-bounce">
+                    <span id="btn-next-label">Diapositive suivante</span>
+                    <span>➡️</span>
+                </button>
+            </div>
+        </section>
+    </div>
+
+    <!-- ÉCRAN DE FIN / FÉLICITATIONS -->
+    <div id="end-screen" class="hidden relative z-10 flex-1 flex flex-col items-center justify-center p-4 sm:p-8 text-center max-w-2xl mx-auto w-full">
+        <div class="bg-white/95 backdrop-blur-sm rounded-[2.5rem] p-6 sm:p-10 shadow-2xl border-8 border-yellow-400 w-full">
+            <div class="text-6xl sm:text-7xl mb-3">🏆🎉</div>
+            <h2 class="text-3xl sm:text-5xl font-bold text-amber-900 mb-3">
+                Bravo Champion !
+            </h2>
+            <p class="text-xl sm:text-2xl text-stone-700 font-semibold mb-6">
+                Tu as reconnu les 10 animaux de la ferme !
+            </p>
+
+            <!-- Récapitulatif visuel des 10 animaux -->
+            <div id="end-animals-parade" class="grid grid-cols-5 gap-2 sm:gap-3 bg-amber-50 p-4 rounded-3xl border-4 border-amber-200 mb-7">
+                <!-- Rempli dynamiquement avec les 10 animaux -->
+            </div>
+
+            <button id="btn-restart" class="btn-3d w-full sm:w-auto px-10 py-5 bg-gradient-to-b from-sky-400 to-blue-600 hover:from-sky-500 hover:to-blue-700 text-white text-2xl sm:text-3xl font-bold rounded-3xl shadow-[0_8px_0_#1d4ed8] border-4 border-sky-200 flex items-center justify-center gap-3 mx-auto cursor-pointer">
+                <span>🔄</span>
+                <span>Rejouer</span>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        /**
+         * Images des animaux : fichiers JPG déposés à côté de index.html.
+         * Exemple : ./cochon.jpg, ./vache.jpg, ./cheval.jpg, etc.
+         */
+        const ANIMAL_FALLBACK_EMOJI = {
+            cochon: '🐷', cheval: '🐴', poule: '🐔', mouton: '🐑', chien: '🐶',
+            coq: '🐓', chevre: '🐐', vache: '🐮', chat: '🐱', canard: '🦆'
+        };
+
+        function animalImageHTML(animal, className = 'w-full h-full object-cover') {
+            const imagePath = `./${animal.imageFile}`;
+            const fallback = ANIMAL_FALLBACK_EMOJI[animal.id] || '🐾';
+            return `
+                <div class="relative w-full h-full flex items-center justify-center overflow-hidden rounded-2xl">
+                    <img src="${imagePath}" alt="${animal.name}" class="${className}"
+                         loading="lazy" decoding="async"
+                         onerror="this.style.display='none'; this.nextElementSibling.classList.remove('hidden');">
+                    <span class="hidden text-5xl sm:text-6xl" role="img" aria-label="${animal.name}">${fallback}</span>
+                </div>`;
+        }
+
+        /**
+         * ============================================================================
+         * 2. DONNÉES DES 10 ANIMAUX DE LA FERME + SOURCES AUDIO RÉELLES HAUTE QUALITÉ
+         * ============================================================================
+         */
+        // Fichiers audio personnalisés : déposer les MP3 dans le même dossier que cette page.
+        // Sons : vache.mp3, cheval.mp3, cochon.mp3, etc.
+        // Images : vache.jpg, cheval.jpg, cochon.jpg, etc. (au même niveau que index.html)
+        const CUSTOM_AUDIO_FOLDER = './';
+        const customSound = (fileName) => `${CUSTOM_AUDIO_FOLDER}${fileName}`;
+
+        const ANIMALS_DATA = [
+            {
+                id: 'cochon',
+                imageFile: 'cochon.jpg',
+                name: 'Le cochon',
+                soundLabel: 'Groin-groin !',
+                duration: 1500,
+                audioUrls: [
+                    customSound('cochon.mp3'),
+                    'https://actions.google.com/sounds/v1/animals/pig_grunt.ogg',
+                    'https://upload.wikimedia.org/wikipedia/commons/4/45/Pig_grunting.ogg'
+                ]
+            },
+            {
+                id: 'cheval',
+                imageFile: 'cheval.jpg',
+                name: 'Le cheval',
+                soundLabel: 'Hiiii-hiii !',
+                duration: 1700,
+                audioUrls: [
+                    customSound('cheval.mp3'),
+                    'https://actions.google.com/sounds/v1/animals/horse_whinny.ogg',
+                    'https://upload.wikimedia.org/wikipedia/commons/e/e1/Horse_neigh.ogg'
+                ]
+            },
+            {
+                id: 'poule',
+                imageFile: 'poule.jpg',
+                name: 'La poule',
+                soundLabel: 'Cot-cot-cot !',
+                duration: 1500,
+                audioUrls: [
+                    customSound('poule.mp3'),
+                    'https://actions.google.com/sounds/v1/animals/chicken_cluck.ogg',
+                    'https://upload.wikimedia.org/wikipedia/commons/4/47/Chicken_clucking.ogg'
+                ]
+            },
+            {
+                id: 'mouton',
+                imageFile: 'mouton.jpg',
+                name: 'Le mouton',
+                soundLabel: 'Bêêê-bêêê !',
+                duration: 1500,
+                audioUrls: [
+                    customSound('mouton.mp3'),
+                    'https://actions.google.com/sounds/v1/animals/sheep_bleat.ogg',
+                    'https://upload.wikimedia.org/wikipedia/commons/c/c8/Sheep_bleating.ogg'
+                ]
+            },
+            {
+                id: 'chien',
+                imageFile: 'chien.jpg',
+                name: 'Le chien',
+                soundLabel: 'Ouaf-ouaf !',
+                duration: 1200,
+                audioUrls: [
+                    customSound('chien.mp3'),
+                    'https://actions.google.com/sounds/v1/animals/dog_bark.ogg',
+                    'https://upload.wikimedia.org/wikipedia/commons/1/1a/Dog_barking.ogg'
+                ]
+            },
+            {
+                id: 'coq',
+                imageFile: 'coq.jpg',
+                name: 'Le coq',
+                soundLabel: 'Cocoricooo !',
+                duration: 1900,
+                audioUrls: [
+                    customSound('coq.mp3'),
+                    'https://actions.google.com/sounds/v1/animals/rooster_crow.ogg',
+                    'https://upload.wikimedia.org/wikipedia/commons/7/7f/Rooster_crowing.ogg'
+                ]
+            },
+            {
+                id: 'chevre',
+                imageFile: 'chevre.jpg',
+                name: 'La chèvre',
+                soundLabel: 'Mêê-ê-ê-ê !',
+                duration: 1450,
+                audioUrls: [
+                    customSound('chevre.mp3'),
+                    'https://actions.google.com/sounds/v1/animals/goat_bleat.ogg',
+                    'https://upload.wikimedia.org/wikipedia/commons/6/60/Goat_bleating.ogg'
+                ]
+            },
+            {
+                id: 'vache',
+                imageFile: 'vache.jpg',
+                name: 'La vache',
+                soundLabel: 'Meuuuuh !',
+                duration: 3500,
+                // Fichier personnalisé à déposer à côté de index.html.
+                audioUrls: [customSound('vache.mp3')]
+            },
+            {
+                id: 'chat',
+                imageFile: 'chat.jpg',
+                name: 'Le chat',
+                soundLabel: 'Miaouuu !',
+                duration: 1400,
+                audioUrls: [
+                    customSound('chat.mp3'),
+                    'https://actions.google.com/sounds/v1/animals/cat_meow.ogg',
+                    'https://upload.wikimedia.org/wikipedia/commons/3/3c/Cat_meow.ogg'
+                ]
+            },
+            {
+                id: 'canard',
+                imageFile: 'canard.jpg',
+                name: 'Le canard',
+                soundLabel: 'Coin-coin-coin !',
+                duration: 1350,
+                audioUrls: [
+                    customSound('canard.mp3'),
+                    'https://actions.google.com/sounds/v1/animals/duck_quack.ogg',
+                    'https://upload.wikimedia.org/wikipedia/commons/1/12/Duck_quacking.ogg'
+                ]
+            }
+        ];
+
+        /**
+         * ============================================================================
+         * 3. MOTEUR AUDIO HYBRIDE : ENREGISTREMENTS RÉELS + REPLI ACOUSTIQUE ORGANIQUE
+         * ============================================================================
+         */
+        class FarmSoundEngine {
+            constructor() {
+                this.ctx = null;
+                this.stopTimeout = null;
+                this.currentAudio = null;
+                this.audioCache = {};
+            }
+
+            ensureContext() {
+                if (!this.ctx) {
+                    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                    this.ctx = new AudioCtx();
+                }
+                if (this.ctx.state === 'suspended') {
+                    this.ctx.resume();
+                }
+            }
+
+            stopCurrent() {
+                if (this.stopTimeout) {
+                    clearTimeout(this.stopTimeout);
+                    this.stopTimeout = null;
+                }
+                if (this.currentAudio) {
+                    try {
+                        this.currentAudio.pause();
+                        this.currentAudio.currentTime = 0;
+                    } catch (e) {}
+                    this.currentAudio = null;
+                }
+            }
+
+            // Mélodie joyeuse quand l'enfant trouve la bonne réponse
+            playSuccess() {
+                this.ensureContext();
+                const now = this.ctx.currentTime;
+                const notes = [523.25, 659.25, 783.99, 1046.50]; // Do5, Mi5, Sol5, Do6
+                notes.forEach((freq, idx) => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(freq, now + idx * 0.09);
+
+                    gain.gain.setValueAtTime(0.001, now + idx * 0.09);
+                    gain.gain.linearRampToValueAtTime(0.2, now + idx * 0.09 + 0.02);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.09 + 0.28);
+
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+
+                    osc.start(now + idx * 0.09);
+                    osc.stop(now + idx * 0.09 + 0.3);
+                });
+            }
+
+            // Son d'erreur discret
+            playError() {
+                this.ensureContext();
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(180, now);
+                osc.frequency.linearRampToValueAtTime(120, now + 0.2);
+
+                gain.gain.setValueAtTime(0.18, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+
+                osc.start(now);
+                osc.stop(now + 0.25);
+            }
+
+            // Lecture du cri authentique de l'animal.
+            // Tous les animaux utilisent le même lecteur et le même système de fichiers personnalisés.
+            playAnimal(animal, onEnd) {
+                this.ensureContext();
+                this.stopCurrent();
+                this._playStandardOrFallback(animal, onEnd);
+            }
+
+            _playStandardOrFallback(animal, onEnd) {
+                const cachedAudio = this.audioCache[animal.id];
+                if (cachedAudio) {
+                    const sourceIndex = Number(cachedAudio.dataset.audioIndex || 0);
+                    this._startAudioElement(cachedAudio, animal, sourceIndex, onEnd);
+                    return;
+                }
+                this._playUrlSequence(animal, 0, onEnd);
+            }
+
+            // Essaie les sources une à une. L'appel à play() est fait immédiatement au clic de l'enfant.
+            _playUrlSequence(animal, index, onEnd) {
+                const urls = animal.audioUrls || [];
+                if (index >= urls.length) {
+                    this._playOrganicSynthesis(animal.id, animal.duration, onEnd);
+                    return;
+                }
+
+                const audio = new Audio();
+                audio.preload = 'auto';
+                audio.dataset.audioIndex = String(index);
+                audio.src = urls[index];
+                audio.addEventListener('canplay', () => {
+                    this.audioCache[animal.id] = audio;
+                }, { once: true });
+
+                this._startAudioElement(audio, animal, index, onEnd, () => {
+                    if (this.audioCache[animal.id] === audio) {
+                        delete this.audioCache[animal.id];
+                    }
+                    this._playUrlSequence(animal, index + 1, onEnd);
+                });
+            }
+
+            _startAudioElement(audio, animal, index, onEnd, onError) {
+                try {
+                    audio.pause();
+                    audio.currentTime = 0;
+                    audio.volume = 1.0;
+                } catch (e) {}
+
+                this.currentAudio = audio;
+                let completed = false;
+
+                const clearTimer = () => {
+                    if (this.stopTimeout) {
+                        clearTimeout(this.stopTimeout);
+                        this.stopTimeout = null;
+                    }
+                };
+
+                const finish = () => {
+                    if (completed || this.currentAudio !== audio) return;
+                    completed = true;
+                    clearTimer();
+                    this.currentAudio = null;
+                    if (onEnd) onEnd();
+                };
+
+                const fail = () => {
+                    if (completed || this.currentAudio !== audio) return;
+                    completed = true;
+                    clearTimer();
+                    try { audio.pause(); } catch (e) {}
+                    this.currentAudio = null;
+                    if (onError) {
+                        onError();
+                    } else {
+                        this._playUrlSequence(animal, index + 1, onEnd);
+                    }
+                };
+
+                audio.onended = finish;
+                audio.onerror = fail;
+
+                // Garde-fou : évite de bloquer le jeu si un fichier ne termine jamais de charger.
+                const safetyDelay = Math.max(12000, Math.min((animal.duration || 2500) + 10000, 30000));
+                this.stopTimeout = setTimeout(() => {
+                    if (this.currentAudio === audio && !completed) {
+                        try { audio.pause(); } catch (e) {}
+                        finish();
+                    }
+                }, safetyDelay);
+
+                try {
+                    const playPromise = audio.play();
+                    if (playPromise && typeof playPromise.catch === 'function') {
+                        playPromise.catch(fail);
+                    }
+                } catch (error) {
+                    fail();
+                }
+            }
+
+            // Repli acoustique naturel haute fidélité (filtrage vocal formant + bruit organique)
+            _playOrganicSynthesis(id, duration, onEnd) {
+                if (id === 'vache') {
+                    if (onEnd) onEnd();
+                    return;
+                }
+                const now = this.ctx.currentTime;
+                switch (id) {
+                    case 'cochon': this._synthCochon(now); break;
+                    case 'cheval': this._synthCheval(now); break;
+                    case 'poule': this._synthPoule(now); break;
+                    case 'mouton': this._synthMouton(now); break;
+                    case 'chien': this._synthChien(now); break;
+                    case 'coq': this._synthCoq(now); break;
+                    case 'chevre': this._synthChevre(now); break;
+                    case 'chat': this._synthChat(now); break;
+                    case 'canard': this._synthCanard(now); break;
+                }
+                this.stopTimeout = setTimeout(() => {
+                    if (onEnd) onEnd();
+                }, duration);
+            }
+
+            _createNoiseBuffer(durationSec) {
+                const bufferSize = Math.floor(this.ctx.sampleRate * durationSec);
+                const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = Math.random() * 2 - 1;
+                }
+                return buffer;
+            }
+
+            _createVocalFormant(type, freqStart, freqEnd, startTime, dur, f1, f2, vol = 0.25) {
+                const osc = this.ctx.createOscillator();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freqStart, startTime);
+                if (freqEnd !== freqStart) {
+                    osc.frequency.exponentialRampToValueAtTime(Math.max(20, freqEnd), startTime + dur);
+                }
+
+                const filter1 = this.ctx.createBiquadFilter();
+                filter1.type = 'bandpass';
+                filter1.frequency.setValueAtTime(f1, startTime);
+                filter1.Q.value = 3.2;
+
+                const filter2 = this.ctx.createBiquadFilter();
+                filter2.type = 'bandpass';
+                filter2.frequency.setValueAtTime(f2, startTime);
+                filter2.Q.value = 4.5;
+
+                const gain = this.ctx.createGain();
+                gain.gain.setValueAtTime(0.001, startTime);
+                gain.gain.linearRampToValueAtTime(vol, startTime + Math.min(0.06, dur * 0.2));
+                gain.gain.setValueAtTime(vol * 0.9, startTime + dur * 0.75);
+                gain.gain.exponentialRampToValueAtTime(0.001, startTime + dur);
+
+                osc.connect(filter1);
+                osc.connect(filter2);
+                filter1.connect(gain);
+                filter2.connect(gain);
+                gain.connect(this.ctx.destination);
+
+                osc.start(startTime);
+                osc.stop(startTime + dur + 0.02);
+                return { osc, gain };
+            }
+
+            _synthCochon(now) {
+                [0, 0.42, 0.85].forEach((offset, idx) => {
+                    const dur = idx === 2 ? 0.45 : 0.3;
+                    const t = now + offset;
+                    const osc = this.ctx.createOscillator();
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(92, t);
+                    osc.frequency.linearRampToValueAtTime(132, t + dur * 0.45);
+                    osc.frequency.linearRampToValueAtTime(76, t + dur);
+
+                    const lfo = this.ctx.createOscillator();
+                    lfo.frequency.value = 34;
+                    const lfoGain = this.ctx.createGain();
+                    lfoGain.gain.value = 26;
+                    lfo.connect(lfoGain);
+                    lfoGain.connect(osc.frequency);
+
+                    const filter = this.ctx.createBiquadFilter();
+                    filter.type = 'bandpass';
+                    filter.frequency.value = 460;
+                    filter.Q.value = 3.5;
+
+                    const gain = this.ctx.createGain();
+                    gain.gain.setValueAtTime(0.001, t);
+                    gain.gain.linearRampToValueAtTime(0.32, t + 0.04);
+                    gain.gain.exponentialRampToValueAtTime(0.001, t + dur);
+
+                    osc.connect(filter);
+                    filter.connect(gain);
+                    gain.connect(this.ctx.destination);
+
+                    lfo.start(t);
+                    osc.start(t);
+                    lfo.stop(t + dur);
+                    osc.stop(t + dur);
+                });
+            }
+
+            _synthCheval(now) {
+                const dur = 1.45;
+                const osc = this.ctx.createOscillator();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(420, now);
+                osc.frequency.exponentialRampToValueAtTime(840, now + 0.22);
+                osc.frequency.exponentialRampToValueAtTime(340, now + dur);
+
+                const vibrato = this.ctx.createOscillator();
+                vibrato.frequency.value = 15;
+                const vibGain = this.ctx.createGain();
+                vibGain.gain.setValueAtTime(12, now);
+                vibGain.gain.linearRampToValueAtTime(52, now + 0.35);
+                vibrato.connect(vibGain);
+                vibGain.connect(osc.frequency);
+
+                const filter = this.ctx.createBiquadFilter();
+                filter.type = 'bandpass';
+                filter.frequency.value = 1150;
+                filter.Q.value = 2.6;
+
+                const gain = this.ctx.createGain();
+                gain.gain.setValueAtTime(0.001, now);
+                gain.gain.linearRampToValueAtTime(0.28, now + 0.14);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + dur);
+
+                osc.connect(filter);
+                filter.connect(gain);
+                gain.connect(this.ctx.destination);
+
+                vibrato.start(now);
+                osc.start(now);
+                vibrato.stop(now + dur);
+                osc.stop(now + dur);
+            }
+
+            _synthPoule(now) {
+                [0, 0.22, 0.44, 0.78].forEach((offset, idx) => {
+                    const dur = idx === 3 ? 0.34 : 0.14;
+                    const t = now + offset;
+                    this._createVocalFormant('sawtooth', idx === 3 ? 340 : 290, idx === 3 ? 210 : 390, t, dur, 950, 1850, 0.26);
+                });
+            }
+
+            _synthMouton(now) {
+                const dur = 1.25;
+                const osc = this.ctx.createOscillator();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(165, now);
+                osc.frequency.linearRampToValueAtTime(192, now + 0.2);
+                osc.frequency.linearRampToValueAtTime(155, now + dur);
+
+                const vib = this.ctx.createOscillator();
+                vib.frequency.value = 11;
+                const vibGain = this.ctx.createGain();
+                vibGain.gain.value = 16;
+                vib.connect(vibGain);
+                vibGain.connect(osc.frequency);
+
+                const f1 = this.ctx.createBiquadFilter();
+                f1.type = 'bandpass';
+                f1.frequency.value = 720;
+                f1.Q.value = 3;
+
+                const f2 = this.ctx.createBiquadFilter();
+                f2.type = 'bandpass';
+                f2.frequency.value = 1480;
+                f2.Q.value = 4;
+
+                const gain = this.ctx.createGain();
+                gain.gain.setValueAtTime(0.001, now);
+                gain.gain.linearRampToValueAtTime(0.32, now + 0.08);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + dur);
+
+                osc.connect(f1);
+                osc.connect(f2);
+                f1.connect(gain);
+                f2.connect(gain);
+                gain.connect(this.ctx.destination);
+
+                vib.start(now);
+                osc.start(now);
+                vib.stop(now + dur);
+                osc.stop(now + dur);
+            }
+
+            _synthChien(now) {
+                [0, 0.46].forEach((offset) => {
+                    const t = now + offset;
+                    const dur = 0.26;
+                    this._createVocalFormant('sawtooth', 185, 115, t, dur, 580, 1250, 0.36);
+
+                    const noise = this.ctx.createBufferSource();
+                    noise.buffer = this._createNoiseBuffer(dur);
+                    const nf = this.ctx.createBiquadFilter();
+                    nf.type = 'bandpass';
+                    nf.frequency.value = 850;
+                    const ng = this.ctx.createGain();
+                    ng.gain.setValueAtTime(0.14, t);
+                    ng.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
+                    noise.connect(nf);
+                    nf.connect(ng);
+                    ng.connect(this.ctx.destination);
+                    noise.start(t);
+                });
+            }
+
+            _synthCoq(now) {
+                const syllables = [
+                    { t: 0.0, dur: 0.16, f0: 360, f1: 420 },
+                    { t: 0.20, dur: 0.16, f0: 440, f1: 480 },
+                    { t: 0.40, dur: 0.20, f0: 540, f1: 600 },
+                    { t: 0.65, dur: 0.95, f0: 660, f1: 430 }
+                ];
+                syllables.forEach((s) => {
+                    this._createVocalFormant('sawtooth', s.f0, s.f1, now + s.t, s.dur, 1150, 2300, 0.28);
+                });
+            }
+
+            _synthChevre(now) {
+                const dur = 1.15;
+                const osc = this.ctx.createOscillator();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(270, now);
+                osc.frequency.linearRampToValueAtTime(240, now + dur);
+
+                const vib = this.ctx.createOscillator();
+                vib.frequency.value = 18;
+                const vibGain = this.ctx.createGain();
+                vibGain.gain.value = 26;
+                vib.connect(vibGain);
+                vibGain.connect(osc.frequency);
+
+                const filter = this.ctx.createBiquadFilter();
+                filter.type = 'bandpass';
+                filter.frequency.value = 1320;
+                filter.Q.value = 4.2;
+
+                const gain = this.ctx.createGain();
+                gain.gain.setValueAtTime(0.001, now);
+                gain.gain.linearRampToValueAtTime(0.28, now + 0.05);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + dur);
+
+                osc.connect(filter);
+                filter.connect(gain);
+                gain.connect(this.ctx.destination);
+
+                vib.start(now);
+                osc.start(now);
+                vib.stop(now + dur);
+                osc.stop(now + dur);
+            }
+
+            _synthChat(now) {
+                const dur = 1.15;
+                const osc = this.ctx.createOscillator();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(420, now);
+                osc.frequency.exponentialRampToValueAtTime(720, now + 0.35);
+                osc.frequency.exponentialRampToValueAtTime(360, now + dur);
+
+                const f1 = this.ctx.createBiquadFilter();
+                f1.type = 'bandpass';
+                f1.frequency.setValueAtTime(850, now);
+                f1.frequency.exponentialRampToValueAtTime(1650, now + 0.35);
+                f1.frequency.exponentialRampToValueAtTime(780, now + dur);
+                f1.Q.value = 3.8;
+
+                const gain = this.ctx.createGain();
+                gain.gain.setValueAtTime(0.001, now);
+                gain.gain.linearRampToValueAtTime(0.28, now + 0.14);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + dur);
+
+                osc.connect(f1);
+                f1.connect(gain);
+                gain.connect(this.ctx.destination);
+
+                osc.start(now);
+                osc.stop(now + dur);
+            }
+
+            _synthCanard(now) {
+                [0, 0.36, 0.72].forEach((offset) => {
+                    const t = now + offset;
+                    const dur = 0.25;
+                    this._createVocalFormant('sawtooth', 260, 175, t, dur, 980, 1950, 0.3);
+                });
+            }
+        }
+
+        /**
+         * ============================================================================
+         * 4. SYSTÈME DE CONFETTIS FESTIFS SUR CANVAS
+         * ============================================================================
+         */
+        class ConfettiSystem {
+            constructor(canvasId) {
+                this.canvas = document.getElementById(canvasId);
+                this.ctx = this.canvas.getContext('2d');
+                this.particles = [];
+                this.animating = false;
+                this.resize();
+                window.addEventListener('resize', () => this.resize());
+            }
+
+            resize() {
+                this.canvas.width = window.innerWidth;
+                this.canvas.height = window.innerHeight;
+            }
+
+            launch(count = 110) {
+                const colors = ['#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#ec4899', '#8b5cf6', '#facc15'];
+                for (let i = 0; i < count; i++) {
+                    this.particles.push({
+                        x: this.canvas.width * (0.2 + Math.random() * 0.6),
+                        y: this.canvas.height * 0.45,
+                        vx: (Math.random() - 0.5) * 16,
+                        vy: -Math.random() * 14 - 5,
+                        size: Math.random() * 10 + 6,
+                        color: colors[Math.floor(Math.random() * colors.length)],
+                        rotation: Math.random() * 360,
+                        rotSpeed: (Math.random() - 0.5) * 12,
+                        shape: Math.random() > 0.4 ? 'rect' : 'circle'
+                    });
+                }
+                if (!this.animating) {
+                    this.animating = true;
+                    this.loop();
+                }
+            }
+
+            loop() {
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                for (let i = this.particles.length - 1; i >= 0; i--) {
+                    const p = this.particles[i];
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    p.vy += 0.38; // gravité
+                    p.vx *= 0.99;
+                    p.rotation += p.rotSpeed;
+
+                    this.ctx.save();
+                    this.ctx.translate(p.x, p.y);
+                    this.ctx.rotate((p.rotation * Math.PI) / 180);
+                    this.ctx.fillStyle = p.color;
+                    if (p.shape === 'rect') {
+                        this.ctx.fillRect(-p.size / 2, -p.size / 4, p.size, p.size / 2);
+                    } else {
+                        this.ctx.beginPath();
+                        this.ctx.arc(0, 0, p.size / 2.2, 0, Math.PI * 2);
+                        this.ctx.fill();
+                    }
+                    this.ctx.restore();
+
+                    if (p.y > this.canvas.height + 30) {
+                        this.particles.splice(i, 1);
+                    }
+                }
+
+                if (this.particles.length > 0) {
+                    requestAnimationFrame(() => this.loop());
+                } else {
+                    this.animating = false;
+                }
+            }
+        }
+
+        /**
+         * ============================================================================
+         * 5. LOGIQUE DU JEU SUR 10 DIAPOSITIVES
+         * ============================================================================
+         */
+        const soundEngine = new FarmSoundEngine();
+        const confetti = new ConfettiSystem('confetti-canvas');
+
+        let slidesOrder = [];
+        let currentSlideIndex = 0;
+        let slideSolved = false;
+
+        // Références DOM
+        const startScreen = document.getElementById('start-screen');
+        const gameScreen = document.getElementById('game-screen');
+        const endScreen = document.getElementById('end-screen');
+        const slideCounter = document.getElementById('slide-counter');
+        const starsBar = document.getElementById('stars-bar');
+        const boxBody = document.getElementById('box-body');
+        const barnSvg = document.getElementById('barn-svg');
+        const soundWaves = document.getElementById('sound-waves');
+        const boxMysteryContent = document.getElementById('box-mystery-content');
+        const boxRevealedContent = document.getElementById('box-revealed-content');
+        const revealedSvgContainer = document.getElementById('revealed-svg-container');
+        const feedbackText = document.getElementById('feedback-text');
+        const choicesGrid = document.getElementById('choices-grid');
+        const nextContainer = document.getElementById('next-container');
+        const btnNextLabel = document.getElementById('btn-next-label');
+
+        function shuffleArray(array) {
+            const arr = [...array];
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        }
+
+        function startNewGame() {
+            // Débloquer immédiatement l'audio WebAudio au clic sur Commencer
+            soundEngine.ensureContext();
+
+            // Mélanger les 10 animaux pour les 10 diapositives
+            slidesOrder = shuffleArray(ANIMALS_DATA);
+            currentSlideIndex = 0;
+
+            startScreen.classList.add('hidden');
+            endScreen.classList.add('hidden');
+            gameScreen.classList.remove('hidden');
+
+            renderStarsBar();
+            loadSlide(0);
+        }
+
+        function renderStarsBar() {
+            starsBar.innerHTML = '';
+            for (let i = 0; i < 10; i++) {
+                const star = document.createElement('span');
+                star.className = 'text-xl sm:text-2xl transition-transform duration-300';
+                if (i < currentSlideIndex || (i === currentSlideIndex && slideSolved)) {
+                    star.textContent = '⭐';
+                    star.classList.add('scale-110');
+                } else if (i === currentSlideIndex) {
+                    star.textContent = '🔵';
+                } else {
+                    star.textContent = '⚪';
+                }
+                starsBar.appendChild(star);
+            }
+        }
+
+        function loadSlide(index) {
+            slideSolved = false;
+            const targetAnimal = slidesOrder[index];
+
+            // Mise à jour en-tête
+            slideCounter.textContent = `Diapositive ${index + 1} / 10`;
+            renderStarsBar();
+
+            // Réinitialiser la grange mystère (portes fermées)
+            barnSvg.classList.remove('barn-open');
+            boxMysteryContent.classList.remove('hidden');
+            boxRevealedContent.classList.add('hidden');
+            boxRevealedContent.classList.remove('flex');
+            boxBody.classList.remove('box-playing');
+            boxBody.classList.add('box-idle');
+            soundWaves.classList.add('hidden');
+
+            // Réinitialiser consigne et bouton suivant
+            feedbackText.textContent = "De quel animal s'agit-il ?";
+            feedbackText.className = "text-xl sm:text-2xl font-bold text-amber-950 bg-white/85 px-5 py-2 rounded-2xl shadow-sm border-2 border-amber-200";
+            nextContainer.classList.add('hidden');
+
+            // Sélectionner 2 leurres différents du bon animal + le bon animal
+            const otherAnimals = shuffleArray(ANIMALS_DATA.filter(a => a.id !== targetAnimal.id)).slice(0, 2);
+            const threeChoices = shuffleArray([targetAnimal, ...otherAnimals]);
+
+            // Générer les 3 cartes d'animaux
+            choicesGrid.innerHTML = '';
+            threeChoices.forEach(animal => {
+                const card = document.createElement('button');
+                card.type = 'button';
+                card.dataset.animalId = animal.id;
+                card.className = 'animal-card relative bg-white rounded-3xl p-3 sm:p-5 border-4 border-stone-200 flex flex-col items-center justify-between cursor-pointer overflow-hidden';
+
+                card.innerHTML = `
+                    <div class="w-20 h-20 sm:w-32 sm:h-32 flex items-center justify-center pointer-events-none">
+                        ${animalImageHTML(animal)}
+                    </div>
+                    <span class="mt-2 text-base sm:text-2xl font-bold text-stone-800 pointer-events-none">
+                        ${animal.name}
+                    </span>
+                    <!-- Overlay Croix Rouge (X) en cas de mauvaise réponse -->
+                    <div class="wrong-overlay hidden absolute inset-0 bg-red-500/20 backdrop-blur-[1px] flex items-center justify-center pointer-events-none">
+                        <svg viewBox="0 0 100 100" class="w-24 h-24 sm:w-32 sm:h-32 drop-shadow-lg">
+                            <line x1="20" y1="20" x2="80" y2="80" stroke="#dc2626" stroke-width="16" stroke-linecap="round"/>
+                            <line x1="80" y1="20" x2="20" y2="80" stroke="#dc2626" stroke-width="16" stroke-linecap="round"/>
+                        </svg>
+                    </div>
+                    <!-- Badge Étoile Verte en cas de bonne réponse -->
+                    <div class="correct-badge hidden absolute top-2 right-2 bg-green-500 text-white w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-lg sm:text-xl font-bold shadow">
+                        ✓
+                    </div>
+                `;
+
+                card.addEventListener('click', () => handleChoiceClick(animal, card));
+                choicesGrid.appendChild(card);
+            });
+
+            // Jouer automatiquement le cri à l'arrivée sur la diapositive
+            triggerCurrentAnimalSound();
+        }
+
+        function triggerCurrentAnimalSound() {
+            const targetAnimal = slidesOrder[currentSlideIndex];
+            if (!targetAnimal) return;
+
+            boxBody.classList.remove('box-idle');
+            boxBody.classList.add('box-playing');
+            soundWaves.classList.remove('hidden');
+
+            soundEngine.playAnimal(targetAnimal, () => {
+                boxBody.classList.remove('box-playing');
+                boxBody.classList.add('box-idle');
+                soundWaves.classList.add('hidden');
+            });
+        }
+
+        function handleChoiceClick(chosenAnimal, cardElement) {
+            if (slideSolved) return;
+
+            const targetAnimal = slidesOrder[currentSlideIndex];
+
+            if (chosenAnimal.id === targetAnimal.id) {
+                // BONNE RÉPONSE !
+                slideSolved = true;
+                soundEngine.stopCurrent();
+                soundEngine.playSuccess();
+                confetti.launch(120);
+
+                // Mettre la carte gagnante en valeur et désactiver les autres
+                const allCards = choicesGrid.querySelectorAll('button');
+                allCards.forEach(c => {
+                    c.disabled = true;
+                    if (c !== cardElement) {
+                        c.classList.add('opacity-50');
+                    }
+                });
+
+                cardElement.classList.add('animal-card-correct');
+                cardElement.querySelector('.correct-badge').classList.remove('hidden');
+
+                // Ouvrir les portes de la grange mystère et révéler l'animal
+                barnSvg.classList.add('barn-open');
+                boxMysteryContent.classList.add('hidden');
+                revealedSvgContainer.innerHTML = animalImageHTML(targetAnimal, 'w-full h-full object-cover');
+                boxRevealedContent.classList.remove('hidden');
+                boxRevealedContent.classList.add('flex');
+                boxBody.classList.remove('box-playing');
+                boxBody.classList.add('box-idle');
+                soundWaves.classList.add('hidden');
+
+                // Feedback joyeux
+                feedbackText.textContent = `🎉 Bravo ! C'est ${targetAnimal.name.toLowerCase()} (${targetAnimal.soundLabel}) !`;
+                feedbackText.className = "text-xl sm:text-2xl font-bold text-green-800 bg-green-100 px-5 py-2 rounded-2xl shadow border-2 border-green-400";
+
+                renderStarsBar();
+
+                // Afficher le bouton Suivant
+                btnNextLabel.textContent = currentSlideIndex === 9 ? "Voir mon trophée" : "Diapositive suivante";
+                nextContainer.classList.remove('hidden');
+            } else {
+                // MAUVAISE RÉPONSE : afficher le X rouge
+                soundEngine.playError();
+                cardElement.disabled = true;
+                cardElement.classList.add('animal-card-wrong', 'card-wrong-shake');
+                const wrongOverlay = cardElement.querySelector('.wrong-overlay');
+                wrongOverlay.classList.remove('hidden');
+
+                feedbackText.textContent = `❌ Oups ! Ce n'est pas ${chosenAnimal.name.toLowerCase()}. Réessaie !`;
+                feedbackText.className = "text-xl sm:text-2xl font-bold text-red-700 bg-red-100 px-5 py-2 rounded-2xl shadow border-2 border-red-300";
+
+                setTimeout(() => {
+                    cardElement.classList.remove('card-wrong-shake');
+                }, 500);
+            }
+        }
+
+        function goToNextSlide() {
+            soundEngine.stopCurrent();
+            if (currentSlideIndex < 9) {
+                currentSlideIndex++;
+                loadSlide(currentSlideIndex);
+            } else {
+                showEndScreen();
+            }
+        }
+
+        function showEndScreen() {
+            gameScreen.classList.add('hidden');
+            endScreen.classList.remove('hidden');
+            confetti.launch(180);
+            soundEngine.playSuccess();
+
+            const parade = document.getElementById('end-animals-parade');
+            parade.innerHTML = '';
+            ANIMALS_DATA.forEach(animal => {
+                const item = document.createElement('button');
+                item.type = 'button';
+                item.title = `Écouter ${animal.name}`;
+                item.className = 'bg-white rounded-2xl p-1.5 sm:p-2 shadow border-2 border-amber-200 flex flex-col items-center hover:scale-105 transition cursor-pointer';
+                item.innerHTML = `
+                    <div class="w-10 h-10 sm:w-14 sm:h-14">${animalImageHTML(animal)}</div>
+                    <span class="text-[11px] sm:text-xs font-bold text-stone-700 mt-1 truncate w-full text-center">${animal.name.replace(/^Le |^La /, '')}</span>
+                `;
+                item.addEventListener('click', () => soundEngine.playAnimal(animal));
+                parade.appendChild(item);
+            });
+        }
+
+        // Écouteurs d'événements principaux
+        document.getElementById('btn-start').addEventListener('click', startNewGame);
+        document.getElementById('btn-restart').addEventListener('click', startNewGame);
+        document.getElementById('btn-next').addEventListener('click', goToNextSlide);
+        document.getElementById('btn-replay-sound').addEventListener('click', triggerCurrentAnimalSound);
+        document.getElementById('mystery-box-btn').addEventListener('click', triggerCurrentAnimalSound);
+    </script>
+</body>
+</html>
